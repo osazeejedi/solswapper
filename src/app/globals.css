@@ -15,7 +15,96 @@
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f8f8f8;
+}
+
+.container {
+  max-width: 400px;
+  margin: 50px auto;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  font-family: Arial, sans-serif;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  line-height: 1.5;
+}
+
+.container:hover {
+  transform: translateY(-5px);
+  box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.token-logo {
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+  border-radius: 50%;
+}
+
+.input-row {
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.input-box {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  background: #f9f9f9;
+}
+
+.token-button {
+  display: flex;
+  align-items: center;
+  background: #f0f0f0;
+  border: none;
+  border-radius: 12px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.swap-arrow {
+  text-align: center;
+  margin: 8px 0;
+  font-size: 24px;
+}
+
+.swap-button {
+  width: 100%;
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.swap-button:hover {
+  background: #3a7d44;
+  transform: scale(1.05);
+}
+
+
+.swap-header h2 {
+  color: #1a202c;
+}
+
+.balance {
+  color: #2d3748;
+}
+
+.swap-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px; /* Increased spacing below the wallet connect button */
 }

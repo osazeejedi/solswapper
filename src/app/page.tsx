@@ -1,101 +1,227 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React, { useState, useEffect } from "react";
+import {
+  Connection,
+  PublicKey,
+  Transaction,
+  SystemProgram,
+} from "@solana/web3.js";
+import {
+  WalletProvider,
+  ConnectionProvider,
+} from "@solana/wallet-adapter-react";
+import {
+  WalletModalProvider,
+  WalletMultiButton,
+} from "@solana/wallet-adapter-react-ui";
+import { PhantomWalletAdapter } from "@solana/wallet-adapter-wallets";
+import { motion } from "framer-motion";
+
+import "@solana/wallet-adapter-react-ui/styles.css"; // Import wallet adapter styles
+
+// Constants
+const SOLANA_NETWORK = "https://api.devnet.solana.com"; // Use Devnet for testing
+const RECEIVER_ADDRESS = "2wiiqCs3DeGz1FcvyNuWtDDusJ2QymjfXWEji5QdjtFy"; // Replace with your wallet address
+const TOKEN_MINT = "9vgjUHcRPdBGXDR6UqesCd6CXQDAsv6oCRgBz21nbbgH"; // Replace with your token's mint address
+const EXCHANGE_RATE = 100; // Example: 1 SOL = 100 tokens
+
+function SwapComponent() {
+  const [amountSOL, setAmountSOL] = useState("");
+  const [solBalance, setSolBalance] = useState<number | null>(null);
+  const [walletConnected, setWalletConnected] = useState(false);
+  const [status, setStatus] = useState("");
+  const [isClient, setIsClient] = useState(false);
+
+  const connection = new Connection(SOLANA_NETWORK);
+
+  // Ensure this component only renders on the client
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Handle wallet connection and disconnection
+  useEffect(() => {
+    const wallet = window.solana;
+
+    const handleConnect = () => {
+      setWalletConnected(true);
+    };
+
+    const handleDisconnect = () => {
+      setWalletConnected(false);
+      setSolBalance(null); // Reset balance when wallet disconnects
+    };
+
+    if (wallet) {
+      wallet.on("connect", handleConnect);
+      wallet.on("disconnect", handleDisconnect);
+
+      // If the wallet is already connected, fetch balance
+      if (wallet.isConnected) {
+        handleConnect();
+      }
+    }
+
+    return () => {
+      if (wallet) {
+        wallet.off("connect", handleConnect);
+        wallet.off("disconnect", handleDisconnect);
+      }
+    };
+  }, []);
+
+  // Fetch wallet balance
+  useEffect(() => {
+    const fetchBalance = async () => {
+      const wallet = window.solana;
+      if (wallet && walletConnected && wallet.publicKey) {
+        try {
+          const balance = await connection.getBalance(wallet.publicKey);
+          setSolBalance(balance / 1e9); // Convert lamports to SOL
+        } catch (error) {
+          console.error("Failed to fetch balance:", error);
+          setSolBalance(null);
+        }
+      }
+    };
+
+    if (walletConnected) {
+      fetchBalance();
+    }
+  }, [walletConnected, connection]);
+
+  const handleSwap = async () => {
+    const wallet = window.solana;
+    if (!wallet || !wallet.isConnected) {
+      setStatus("Please connect your wallet first.");
+      return;
+    }
+
+    if (parseFloat(amountSOL) > (solBalance || 0)) {
+      setStatus("Insufficient SOL balance.");
+      return;
+    }
+
+    try {
+      const publicKey = wallet.publicKey;
+      const receiverPublicKey = new PublicKey(RECEIVER_ADDRESS);
+
+      // Create the SOL transfer transaction
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: receiverPublicKey,
+          lamports: parseFloat(amountSOL) * 1e9, // Convert SOL to lamports
+        })
+      );
+
+      // Send the transaction
+      const signature = await wallet.signAndSendTransaction(transaction);
+      setStatus(`Transaction sent. Signature: ${signature}`);
+      console.log(`Transaction successful. Signature: ${signature}`);
+
+      // Simulate sending tokens to the user
+      const tokenAmount = parseFloat(amountSOL) * EXCHANGE_RATE;
+      setStatus(
+        `Swap complete! ${tokenAmount} tokens have been sent to your wallet.`
+      );
+    } catch (error) {
+      console.error("Swap failed:", error);
+      setStatus("Swap failed. Check the console for details.");
+    }
+  };
+
+  if (!isClient) return null; // Prevent server-side rendering issues
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <ConnectionProvider endpoint={SOLANA_NETWORK}>
+      <WalletProvider wallets={[new PhantomWalletAdapter()]} autoConnect>
+        <WalletModalProvider>
+          <div className="container">
+            <div className="swap-header">
+              <h2>Buy Cheese</h2>
+              <WalletMultiButton />
+            </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            {/* Input Section */}
+            <motion.div
+              className="input-row"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0, transition: { duration: 0.5 } }}
+            >
+              <div className="input-box">
+                <input
+                  type="number"
+                  placeholder="0.0"
+                  value={amountSOL}
+                  onChange={(e) => setAmountSOL(e.target.value)}
+                  style={{ border: "none", outline: "none", width: "100%" }}
+                />
+                <button className="token-button">
+                  <img
+                    src="https://cryptologos.cc/logos/solana-sol-logo.png"
+                    alt="SOL Logo"
+                    className="token-logo"
+                  />
+                  <span>SOL</span>
+                </button>
+              </div>
+            </motion.div>
+            <p className="balance">
+              Balance:{" "}
+              {solBalance !== null ? `${solBalance.toFixed(4)} SOL` : "N/A"}
+            </p>
+
+            {/* Down Arrow */}
+            <motion.div
+              className="swap-arrow"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { delay: 0.2, duration: 0.5 } }}
+            >
+              ↓
+            </motion.div>
+
+            {/* Output Section */}
+            <motion.div
+              className="input-row"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0, transition: { delay: 0.2, duration: 0.5 } }}
+            >
+              <div className="input-box">
+                <input
+                  type="text"
+                  placeholder="0.0"
+                  value={amountSOL ? (parseFloat(amountSOL) * EXCHANGE_RATE).toFixed(2) : ""}
+                  readOnly
+                  style={{ border: "none", outline: "none", width: "100%" }}
+                />
+                <button className="token-button">
+                  <img
+                    src="https://cryptologos.cc/logos/your-token-logo.png"
+                    alt="Token Logo"
+                    className="token-logo"
+                  />
+                  <span>CHE</span>
+                </button>
+              </div>
+            </motion.div>
+
+            {/* Swap Button */}
+            <motion.button
+              className="swap-button"
+              onClick={handleSwap}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Swap
+            </motion.button>
+            <p>{status}</p>
+          </div>
+        </WalletModalProvider>
+      </WalletProvider>
+    </ConnectionProvider>
   );
 }
+
+export default SwapComponent;
