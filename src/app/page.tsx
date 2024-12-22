@@ -21,7 +21,7 @@ import { motion } from "framer-motion";
 import "@solana/wallet-adapter-react-ui/styles.css"; // Import wallet adapter styles
 
 // Constants
-const SOLANA_NETWORK = "https://api.devnet.solana.com"; // Use Devnet for testing
+const SOLANA_NETWORK = "https://solana-mainnet.g.alchemy.com/v2/_KfDwpGQ2NUxae8Ep4ZYH4Gr5yrKwEcU"; // Use Devnet for testing
 const RECEIVER_ADDRESS = "2wiiqCs3DeGz1FcvyNuWtDDusJ2QymjfXWEji5QdjtFy"; // Replace with your wallet address
 const TOKEN_MINT = "9vgjUHcRPdBGXDR6UqesCd6CXQDAsv6oCRgBz21nbbgH"; // Replace with your token's mint address
 const EXCHANGE_RATE = 100; // Example: 1 SOL = 100 tokens
