@@ -35,6 +35,13 @@ function SwapComponent() {
 
   const connection = new Connection(SOLANA_NETWORK);
 
+   // **Highlight: Function to Notify Framer via PostMessage**
+   const postMessageToParent = (type: any, data = {}) => {
+    if (window.parent) {
+      window.parent.postMessage({ type, ...data }, "*");
+    }
+  };
+
   // Ensure this component only renders on the client
   useEffect(() => {
     setIsClient(true);
@@ -46,11 +53,13 @@ function SwapComponent() {
 
     const handleConnect = () => {
       setWalletConnected(true);
+      postMessageToParent("walletConnected", { publicKey: wallet.publicKey.toString() }); // Notify Framer
     };
 
     const handleDisconnect = () => {
       setWalletConnected(false);
       setSolBalance(null); // Reset balance when wallet disconnects
+      postMessageToParent("walletDisconnected"); // Notify Framer
     };
 
     if (wallet) {
@@ -137,9 +146,18 @@ function SwapComponent() {
       console.log("Transaction signature:", signature);
   
       setStatus("Swap complete! Tokens have been sent to your wallet.");
-    } catch (error) {
-      console.error("Transaction failed:", error);
+    } catch (err) {
+      let errorMessage = "Unknown error";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      console.error("Transaction failed:", err);
       setStatus("Swap failed. Check the console for details.");
+      postMessageToParent("transactionStatus", {
+        status: "error",
+        error: errorMessage,
+      }); // Notify Framer
+      // Notify Framer
     }
   };
   
